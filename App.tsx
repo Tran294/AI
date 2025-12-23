@@ -4,6 +4,7 @@ import { Member, AIPrediction, Role } from './types';
 import { predictMemberRole } from './services/geminiService';
 import { StatsCard } from './components/StatsCard';
 import { PredictionModal } from './components/PredictionModal';
+import { AddMemberModal } from './components/AddMemberModal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 // Dữ liệu mẫu tiếng Việt
@@ -67,6 +68,7 @@ const App: React.FC = () => {
   const [prediction, setPrediction] = useState<AIPrediction | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [showPredictionModal, setShowPredictionModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const filteredMembers = useMemo(() => {
     return members.filter(m => 
@@ -91,10 +93,15 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAddMember = (newMember: Member) => {
+    setMembers([newMember, ...members]);
+    setShowAddModal(false);
+  };
+
   const performanceData = useMemo(() => {
     return members.map(m => ({
       name: m.name.split(' ').pop(),
-      avgRating: m.history.reduce((acc, h) => acc + h.rating, 0) / m.history.length || 0,
+      avgRating: m.history.length > 0 ? m.history.reduce((acc, h) => acc + h.rating, 0) / m.history.length : 0,
       count: m.history.length
     }));
   }, [members]);
@@ -123,7 +130,10 @@ const App: React.FC = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm">
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+            >
               Thêm Thành viên
             </button>
           </div>
@@ -195,7 +205,10 @@ const App: React.FC = () => {
                     <div className="text-right hidden sm:block">
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Đánh giá TB</p>
                       <p className="text-sm font-bold text-indigo-600">
-                        {(member.history.reduce((a, b) => a + b.rating, 0) / member.history.length || 0).toFixed(1)}/5
+                        {member.history.length > 0 
+                          ? (member.history.reduce((a, b) => a + b.rating, 0) / member.history.length).toFixed(1)
+                          : '0.0'
+                        }/5
                       </p>
                     </div>
                     <button 
@@ -253,7 +266,14 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Prediction Modal */}
+      {/* Modals */}
+      {showAddModal && (
+        <AddMemberModal 
+          onClose={() => setShowAddModal(false)}
+          onAdd={handleAddMember}
+        />
+      )}
+
       {showPredictionModal && selectedMember && (
         <PredictionModal 
           member={selectedMember} 
